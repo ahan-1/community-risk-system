@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.RiskTypeMapper">
+
+    <resultMap type="RiskType" id="RiskTypeResult">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <sql id="selectRiskTypeVo">
+        select id, name, status from risk_type
+    </sql>
+
+    <select id="selectRiskTypeList" parameterType="RiskType" resultMap="RiskTypeResult">
+        <include refid="selectRiskTypeVo"/>
+        <where>
+            <if test="name != null and name != ''">and name like concat('%', #{name}, '%')</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectRiskTypeById" parameterType="Long" resultMap="RiskTypeResult">
+        <include refid="selectRiskTypeVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertRiskType" parameterType="RiskType" useGeneratedKeys="true" keyProperty="id">
+        insert into risk_type
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRiskType" parameterType="RiskType">
+        update risk_type
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="status != null">status = #{status},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRiskTypeById" parameterType="Long">
+        delete from risk_type where id = #{id}
+    </delete>
+
+    <delete id="deleteRiskTypeByIds" parameterType="String">
+        delete from risk_type where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

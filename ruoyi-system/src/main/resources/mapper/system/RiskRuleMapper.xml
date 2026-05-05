@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.RiskRuleMapper">
+
+    <resultMap type="RiskRule" id="RiskRuleResult">
+        <result property="id" column="id"/>
+        <result property="keyword" column="keyword"/>
+        <result property="typeId" column="type_id"/>
+        <result property="weight" column="weight"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <sql id="selectRiskRuleVo">
+        select id, keyword, type_id, weight, status from risk_rule
+    </sql>
+
+    <select id="selectRiskRuleList" parameterType="RiskRule" resultMap="RiskRuleResult">
+        <include refid="selectRiskRuleVo"/>
+        <where>
+            <if test="keyword != null and keyword != ''">and keyword = #{keyword}</if>
+            <if test="typeId != null">and type_id = #{typeId}</if>
+            <if test="weight != null">and weight = #{weight}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectRiskRuleById" parameterType="Long" resultMap="RiskRuleResult">
+        <include refid="selectRiskRuleVo"/>
+        where id = #{id}
+    </select>
+    
+    <select id="selectRiskRuleListActive" resultMap="RiskRuleResult">
+        <include refid="selectRiskRuleVo"/>
+        where status = 0
+    </select>
+
+    <insert id="insertRiskRule" parameterType="RiskRule" useGeneratedKeys="true" keyProperty="id">
+        insert into risk_rule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="keyword != null and keyword != ''">keyword,</if>
+            <if test="typeId != null">type_id,</if>
+            <if test="weight != null">weight,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="keyword != null and keyword != ''">#{keyword},</if>
+            <if test="typeId != null">#{typeId},</if>
+            <if test="weight != null">#{weight},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRiskRule" parameterType="RiskRule">
+        update risk_rule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="keyword != null and keyword != ''">keyword = #{keyword},</if>
+            <if test="typeId != null">type_id = #{typeId},</if>
+            <if test="weight != null">weight = #{weight},</if>
+            <if test="status != null">status = #{status},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRiskRuleById" parameterType="Long">
+        delete from risk_rule where id = #{id}
+    </delete>
+
+    <delete id="deleteRiskRuleByIds" parameterType="String">
+        delete from risk_rule where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

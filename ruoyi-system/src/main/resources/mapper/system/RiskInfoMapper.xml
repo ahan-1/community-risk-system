@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.RiskInfoMapper">
+
+    <resultMap type="RiskInfo" id="RiskInfoResult">
+        <result property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="typeId" column="type_id"/>
+        <result property="keywordScore" column="keyword_score"/>
+        <result property="finalScore" column="final_score"/>
+        <result property="riskLevel" column="risk_level"/>
+        <result property="status" column="status"/>
+        <result property="userId" column="user_id"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="handleResult" column="handle_result"/>
+    </resultMap>
+
+    <sql id="selectRiskInfoVo">
+        select id, title, content, type_id, keyword_score, final_score, risk_level, status, user_id, image_url, handle_result
+        from risk_info
+    </sql>
+
+    <select id="selectRiskInfoList" parameterType="RiskInfo" resultMap="RiskInfoResult">
+        <include refid="selectRiskInfoVo"/>
+        <where>
+            <if test="title != null and title != ''">and title = #{title}</if>
+            <if test="content != null and content != ''">and content = #{content}</if>
+            <if test="typeId != null">and type_id = #{typeId}</if>
+            <if test="keywordScore != null">and keyword_score = #{keywordScore}</if>
+            <if test="finalScore != null">and final_score = #{finalScore}</if>
+            <if test="riskLevel != null">and risk_level = #{riskLevel}</if>
+            <if test="status != null">and status = #{status}</if>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="imageUrl != null and imageUrl != ''">and image_url = #{imageUrl}</if>
+            <if test="handleResult != null and handleResult != ''">and handle_result = #{handleResult}</if>
+        </where>
+    </select>
+
+    <select id="selectRiskInfoById" parameterType="Long" resultMap="RiskInfoResult">
+        <include refid="selectRiskInfoVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertRiskInfo" parameterType="RiskInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into risk_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="title != null and title != ''">title,</if>
+            <if test="content != null">content,</if>
+            <if test="typeId != null">type_id,</if>
+            <if test="keywordScore != null">keyword_score,</if>
+            <if test="finalScore != null">final_score,</if>
+            <if test="riskLevel != null">risk_level,</if>
+            <if test="status != null">status,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="imageUrl != null">image_url,</if>
+            <if test="handleResult != null">handle_result,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="title != null and title != ''">#{title},</if>
+            <if test="content != null">#{content},</if>
+            <if test="typeId != null">#{typeId},</if>
+            <if test="keywordScore != null">#{keywordScore},</if>
+            <if test="finalScore != null">#{finalScore},</if>
+            <if test="riskLevel != null">#{riskLevel},</if>
+            <if test="status != null">#{status},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="imageUrl != null">#{imageUrl},</if>
+            <if test="handleResult != null">#{handleResult},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRiskInfo" parameterType="RiskInfo">
+        update risk_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="typeId != null">type_id = #{typeId},</if>
+            <if test="keywordScore != null">keyword_score = #{keywordScore},</if>
+            <if test="finalScore != null">final_score = #{finalScore},</if>
+            <if test="riskLevel != null">risk_level = #{riskLevel},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="imageUrl != null">image_url = #{imageUrl},</if>
+            <if test="handleResult != null">handle_result = #{handleResult},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updateRiskInfoAuditOutcome">
+        update risk_info
+        set status = #{status},
+            handle_result = #{handleResult}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRiskInfoById" parameterType="Long">
+        delete from risk_info where id = #{id}
+    </delete>
+
+    <delete id="deleteRiskInfoByIds" parameterType="String">
+        delete from risk_info where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="countRiskInfoGroupByTypeId" resultType="com.ruoyi.system.domain.vo.RiskStatTypeCountVO">
+        select type_id as typeId, count(1) as count
+        from risk_info
+        group by type_id
+        order by type_id
+    </select>
+
+    <select id="countRiskInfoGroupByRiskLevel" resultType="com.ruoyi.system.domain.vo.RiskStatLevelCountVO">
+        select risk_level as riskLevel, count(1) as count
+        from risk_info
+        group by risk_level
+        order by risk_level
+    </select>
+
+    <select id="countRiskAuditByMonth" resultType="com.ruoyi.system.domain.vo.RiskStatMonthCountVO">
+        select date_format(audit_time, '%Y-%m') as statMonth, count(1) as count
+        from risk_audit
+        where audit_time is not null
+        group by date_format(audit_time, '%Y-%m')
+        order by statMonth
+    </select>
+</mapper>

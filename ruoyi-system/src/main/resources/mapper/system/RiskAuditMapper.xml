@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.RiskAuditMapper">
+
+    <sql id="selectRiskAuditVo">
+        select id,
+               risk_id            as riskId,
+               audit_user_id      as auditUserId,
+               audit_result       as auditResult,
+               audit_comment      as auditComment,
+               audit_time         as auditTime
+        from risk_audit
+    </sql>
+
+    <select id="selectRiskAuditList" parameterType="RiskAudit" resultType="RiskAudit">
+        <include refid="selectRiskAuditVo"/>
+        <where>
+            <if test="riskId != null">and risk_id = #{riskId}</if>
+            <if test="auditUserId != null">and audit_user_id = #{auditUserId}</if>
+            <if test="auditResult != null and auditResult != ''">and audit_result = #{auditResult}</if>
+            <if test="auditComment != null and auditComment != ''">and audit_comment = #{auditComment}</if>
+            <if test="auditTime != null">and audit_time = #{auditTime}</if>
+        </where>
+    </select>
+
+    <select id="selectRiskAuditById" parameterType="Long" resultType="RiskAudit">
+        <include refid="selectRiskAuditVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertRiskAudit" parameterType="RiskAudit" useGeneratedKeys="true" keyProperty="id">
+        insert into risk_audit
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="riskId != null">risk_id,</if>
+            <if test="auditUserId != null">audit_user_id,</if>
+            <if test="auditResult != null">audit_result,</if>
+            <if test="auditComment != null">audit_comment,</if>
+            <if test="auditTime != null">audit_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="riskId != null">#{riskId},</if>
+            <if test="auditUserId != null">#{auditUserId},</if>
+            <if test="auditResult != null">#{auditResult},</if>
+            <if test="auditComment != null">#{auditComment},</if>
+            <if test="auditTime != null">#{auditTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateRiskAudit" parameterType="RiskAudit">
+        update risk_audit
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="riskId != null">risk_id = #{riskId},</if>
+            <if test="auditUserId != null">audit_user_id = #{auditUserId},</if>
+            <if test="auditResult != null">audit_result = #{auditResult},</if>
+            <if test="auditComment != null">audit_comment = #{auditComment},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteRiskAuditById" parameterType="Long">
+        delete from risk_audit where id = #{id}
+    </delete>
+
+    <delete id="deleteRiskAuditByIds" parameterType="String">
+        delete from risk_audit where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

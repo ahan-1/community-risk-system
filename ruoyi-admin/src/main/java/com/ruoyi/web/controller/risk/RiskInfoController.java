@@ -17,8 +17,10 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.system.domain.RiskInfo;
+import com.ruoyi.system.domain.RiskType;
 import com.ruoyi.system.domain.dto.RiskAuditDTO;
 import com.ruoyi.system.service.IRiskInfoService;
+import com.ruoyi.system.service.IRiskTypeService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
 
@@ -34,6 +36,21 @@ public class RiskInfoController extends BaseController
 {
     @Autowired
     private IRiskInfoService riskInfoService;
+
+    @Autowired
+    private IRiskTypeService riskTypeService;
+
+    /**
+     * 风险上报时获取可选风险类型
+     */
+    @PreAuthorize("@ss.hasAnyPermi('system:info:add,system:info:list')")
+    @GetMapping("/type-options")
+    public AjaxResult typeOptions()
+    {
+        RiskType query = new RiskType();
+        query.setStatus(0L);
+        return success(riskTypeService.selectRiskTypeList(query));
+    }
 
     /**
      * 按类型统计（管理员）

@@ -24,10 +24,7 @@ import com.ruoyi.system.mapper.RiskRuleMapper;
 import com.ruoyi.system.service.IRiskInfoService;
 
 /**
- * 风险信息主Service业务层处理
- *
- * @author ruoyi
- * @date 2026-05-04
+ * 风险信息业务层
  */
 @Service
 public class RiskInfoServiceImpl implements IRiskInfoService
@@ -49,10 +46,11 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         {
             return null;
         }
-        if (!SecurityUtils.isAdmin() && !SecurityUtils.getUserId().equals(info.getUserId()))
+        if (!isRiskAdmin() && !SecurityUtils.getUserId().equals(info.getUserId()))
         {
             throw new ServiceException("无权限查看该数据", HttpStatus.FORBIDDEN);
         }
+        hideSensitiveFieldsForNonAdmin(info);
         return info;
     }
 
@@ -63,11 +61,19 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         {
             riskInfo = new RiskInfo();
         }
-        if (!SecurityUtils.isAdmin())
+        if (!isRiskAdmin())
         {
             riskInfo.setUserId(SecurityUtils.getUserId());
         }
-        return riskInfoMapper.selectRiskInfoList(riskInfo);
+        List<RiskInfo> list = riskInfoMapper.selectRiskInfoList(riskInfo);
+        if (list != null)
+        {
+            for (RiskInfo item : list)
+            {
+                hideSensitiveFieldsForNonAdmin(item);
+            }
+        }
+        return list;
     }
 
     /**
@@ -104,17 +110,16 @@ public class RiskInfoServiceImpl implements IRiskInfoService
                 {
                     continue;
                 }
-                long w = rule.getWeight() != null ? rule.getWeight() : 0L;
-                keywordTotal += w;
+                long weight = rule.getWeight() != null ? rule.getWeight() : 0L;
+                keywordTotal += weight;
                 if (rule.getTypeId() != null)
                 {
-                    typeScoreMap.merge(rule.getTypeId(), w, Long::sum);
+                    typeScoreMap.merge(rule.getTypeId(), weight, Long::sum);
                 }
             }
         }
 
-        Long userChosenTypeId = riskInfo.getTypeId();
-        Long resolvedTypeId = userChosenTypeId;
+        Long resolvedTypeId = riskInfo.getTypeId();
         if (resolvedTypeId == null)
         {
             resolvedTypeId = pickBestTypeId(typeScoreMap);
@@ -155,22 +160,22 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         }
         Long bestId = null;
         long bestScore = Long.MIN_VALUE;
-        for (Map.Entry<Long, Long> e : typeScoreMap.entrySet())
+        for (Map.Entry<Long, Long> entry : typeScoreMap.entrySet())
         {
-            Long tid = e.getKey();
-            if (tid == null)
+            Long typeId = entry.getKey();
+            if (typeId == null)
             {
                 continue;
             }
-            long s = e.getValue() != null ? e.getValue() : 0L;
-            if (s > bestScore)
+            long score = entry.getValue() != null ? entry.getValue() : 0L;
+            if (score > bestScore)
             {
-                bestScore = s;
-                bestId = tid;
+                bestScore = score;
+                bestId = typeId;
             }
-            else if (s == bestScore && bestId != null && tid < bestId)
+            else if (score == bestScore && bestId != null && typeId < bestId)
             {
-                bestId = tid;
+                bestId = typeId;
             }
         }
         return bestId;
@@ -198,7 +203,7 @@ public class RiskInfoServiceImpl implements IRiskInfoService
     @Transactional(rollbackFor = Exception.class)
     public void auditRisk(RiskAuditDTO dto)
     {
-        if (!SecurityUtils.isAdmin())
+        if (!isRiskAdmin())
         {
             throw new ServiceException("仅管理员可审核风险信息", HttpStatus.FORBIDDEN);
         }
@@ -206,17 +211,32 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         {
             throw new ServiceException("风险编号不能为空");
         }
+
         String result = StringUtils.trim(dto.getAuditResult());
         String comment = dto.getAuditComment() != null ? dto.getAuditComment() : "";
         if (StringUtils.isEmpty(result))
         {
             throw new ServiceException("审核结果不能为空");
         }
+
         RiskInfo existing = riskInfoMapper.selectRiskInfoById(dto.getRiskId());
         if (existing == null)
         {
             throw new ServiceException("风险信息不存在");
         }
+
+        Long finalScore = dto.getFinalScore() != null ? dto.getFinalScore() : existing.getFinalScore();
+        if (finalScore == null || finalScore < 0L)
+        {
+            throw new ServiceException("综合评分不能为空且不能小于0");
+        }
+
+        Long riskLevel = dto.getRiskLevel() != null ? dto.getRiskLevel() : existing.getRiskLevel();
+        if (riskLevel == null || (riskLevel != 1L && riskLevel != 2L && riskLevel != 3L))
+        {
+            throw new ServiceException("风险等级只能是1、2或3");
+        }
+
         Long newStatus;
         if ("通过".equals(result))
         {
@@ -230,7 +250,8 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         {
             throw new ServiceException("审核结果无效，请填写：通过 或 驳回");
         }
-        riskInfoMapper.updateRiskInfoAuditOutcome(dto.getRiskId(), newStatus, comment);
+
+        riskInfoMapper.updateRiskInfoAuditOutcome(dto.getRiskId(), newStatus, comment, finalScore, riskLevel);
 
         RiskAudit audit = new RiskAudit();
         audit.setRiskId(dto.getRiskId());
@@ -264,9 +285,25 @@ public class RiskInfoServiceImpl implements IRiskInfoService
 
     private void assertAdminForStatistics()
     {
-        if (!SecurityUtils.isAdmin())
+        if (!isRiskAdmin())
         {
             throw new ServiceException("仅管理员可查看统计数据", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private void hideSensitiveFieldsForNonAdmin(RiskInfo riskInfo)
+    {
+        if (riskInfo == null || isRiskAdmin())
+        {
+            return;
+        }
+        riskInfo.setKeywordScore(null);
+        riskInfo.setFinalScore(null);
+        riskInfo.setRiskLevel(null);
+    }
+
+    private boolean isRiskAdmin()
+    {
+        return SecurityUtils.hasRole("admin");
     }
 }

@@ -1,6 +1,7 @@
 package com.ruoyi.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 import com.ruoyi.system.domain.RiskRule;
 
 /**
@@ -9,6 +10,7 @@ import com.ruoyi.system.domain.RiskRule;
  * @author ruoyi
  * @date 2026-05-04
  */
+@Mapper
 public interface RiskRuleMapper 
 {
     /**

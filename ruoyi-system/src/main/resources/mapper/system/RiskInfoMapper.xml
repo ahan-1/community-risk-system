@@ -92,7 +92,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateRiskInfoAuditOutcome">
         update risk_info
         set status = #{status},
-            handle_result = #{handleResult}
+            handle_result = #{handleResult},
+            final_score = #{finalScore},
+            risk_level = #{riskLevel}
         where id = #{id}
     </update>
 

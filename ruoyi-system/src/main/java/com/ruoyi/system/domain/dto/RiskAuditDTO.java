@@ -16,6 +16,12 @@ public class RiskAuditDTO implements Serializable
     /** audit comment text */
     private String auditComment;
 
+    /** final score adjusted by admin */
+    private Long finalScore;
+
+    /** risk level adjusted by admin */
+    private Long riskLevel;
+
     public Long getRiskId()
     {
         return riskId;
@@ -44,5 +50,25 @@ public class RiskAuditDTO implements Serializable
     public void setAuditComment(String auditComment)
     {
         this.auditComment = auditComment;
+    }
+
+    public Long getFinalScore()
+    {
+        return finalScore;
+    }
+
+    public void setFinalScore(Long finalScore)
+    {
+        this.finalScore = finalScore;
+    }
+
+    public Long getRiskLevel()
+    {
+        return riskLevel;
+    }
+
+    public void setRiskLevel(Long riskLevel)
+    {
+        this.riskLevel = riskLevel;
     }
 }

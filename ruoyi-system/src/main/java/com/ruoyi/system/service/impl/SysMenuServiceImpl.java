@@ -75,15 +75,8 @@ public class SysMenuServiceImpl implements ISysMenuService
     {
         List<SysMenu> menuList = null;
         // 管理员显示所有菜单信息
-        if (SecurityUtils.isAdmin(userId))
-        {
-            menuList = menuMapper.selectMenuList(menu);
-        }
-        else
-        {
-            menu.getParams().put("userId", userId);
-            menuList = menuMapper.selectMenuListByUserId(menu);
-        }
+        menu.getParams().put("userId", userId);
+        menuList = menuMapper.selectMenuListByUserId(menu);
         return menuList;
     }
 
@@ -139,14 +132,7 @@ public class SysMenuServiceImpl implements ISysMenuService
     public List<SysMenu> selectMenuTreeByUserId(Long userId)
     {
         List<SysMenu> menus = null;
-        if (SecurityUtils.isAdmin(userId))
-        {
-            menus = menuMapper.selectMenuTreeAll();
-        }
-        else
-        {
-            menus = menuMapper.selectMenuTreeByUserId(userId);
-        }
+        menus = menuMapper.selectMenuTreeByUserId(userId);
         return getChildPerms(menus, MENU_ROOT_ID);
     }
 

@@ -1,6 +1,7 @@
 package com.ruoyi.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import com.ruoyi.system.domain.RiskInfo;
 import com.ruoyi.system.domain.vo.RiskStatLevelCountVO;
@@ -13,6 +14,7 @@ import com.ruoyi.system.domain.vo.RiskStatTypeCountVO;
  * @author ruoyi
  * @date 2026-05-04
  */
+@Mapper
 public interface RiskInfoMapper 
 {
     /**
@@ -66,7 +68,9 @@ public interface RiskInfoMapper
     /**
      * 审核后更新风险信息状态与处理说明
      */
-    public int updateRiskInfoAuditOutcome(@Param("id") Long id, @Param("status") Long status, @Param("handleResult") String handleResult);
+    public int updateRiskInfoAuditOutcome(@Param("id") Long id, @Param("status") Long status,
+            @Param("handleResult") String handleResult, @Param("finalScore") Long finalScore,
+            @Param("riskLevel") Long riskLevel);
 
     /**
      * 按类型统计风险信息数量

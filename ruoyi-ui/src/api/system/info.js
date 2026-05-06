@@ -9,6 +9,42 @@ export function listInfo(query) {
   })
 }
 
+export function listInfoTypeOptions() {
+  return request({
+    url: '/system/info/type-options',
+    method: 'get'
+  })
+}
+
+export function auditInfo(data) {
+  return request({
+    url: '/system/info/audit',
+    method: 'post',
+    data: data
+  })
+}
+
+export function statInfoByType() {
+  return request({
+    url: '/system/info/stat/type',
+    method: 'get'
+  })
+}
+
+export function statInfoByLevel() {
+  return request({
+    url: '/system/info/stat/level',
+    method: 'get'
+  })
+}
+
+export function statInfoByMonth() {
+  return request({
+    url: '/system/info/stat/month',
+    method: 'get'
+  })
+}
+
 // 查询风险信息主详细
 export function getInfo(id) {
   return request({

@@ -1,6 +1,7 @@
 package com.ruoyi.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 import com.ruoyi.system.domain.SysPost;
 
 /**
@@ -8,6 +9,7 @@ import com.ruoyi.system.domain.SysPost;
  * 
  * @author ruoyi
  */
+@Mapper
 public interface SysPostMapper
 {
     /**

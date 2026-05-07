@@ -277,9 +277,33 @@ public class SysUserServiceImpl implements ISysUserService
      * @return 结果
      */
     @Override
+    @Transactional
     public boolean registerUser(SysUser user)
     {
-        return userMapper.insertUser(user) > 0;
+        user.setStatus("0");
+        if (StringUtils.isEmpty(user.getNickName()))
+        {
+            user.setNickName(user.getUserName());
+        }
+
+        int rows = userMapper.insertUser(user);
+        if (rows <= 0)
+        {
+            return false;
+        }
+
+        Long commonRoleId = roleMapper.selectRoleAll().stream()
+                .filter(role -> "common".equals(role.getRoleKey()))
+                .map(SysRole::getRoleId)
+                .findFirst()
+                .orElse(null);
+        if (commonRoleId == null)
+        {
+            throw new ServiceException("未找到普通用户角色common，请先初始化角色数据");
+        }
+
+        insertUserRole(user.getUserId(), new Long[] { commonRoleId });
+        return true;
     }
 
     /**

@@ -37,7 +37,7 @@ public class RiskAuditController extends BaseController
     /**
      * 查询【请填写功能名称】列表
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:list')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @GetMapping("/list")
     public TableDataInfo list(RiskAudit riskAudit)
     {
@@ -49,7 +49,7 @@ public class RiskAuditController extends BaseController
     /**
      * 导出【请填写功能名称】列表
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:export')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, RiskAudit riskAudit)
@@ -62,7 +62,7 @@ public class RiskAuditController extends BaseController
     /**
      * 获取【请填写功能名称】详细信息
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:query')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -72,7 +72,7 @@ public class RiskAuditController extends BaseController
     /**
      * 新增【请填写功能名称】
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:add')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody RiskAudit riskAudit)
@@ -83,7 +83,7 @@ public class RiskAuditController extends BaseController
     /**
      * 修改【请填写功能名称】
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:edit')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody RiskAudit riskAudit)
@@ -94,7 +94,7 @@ public class RiskAuditController extends BaseController
     /**
      * 删除【请填写功能名称】
      */
-    @PreAuthorize("@ss.hasPermi('system:audit:remove')")
+    @PreAuthorize("@ss.hasPermi('system:info:edit')")
     @Log(title = "【请填写功能名称】", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

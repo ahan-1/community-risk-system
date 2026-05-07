@@ -1,6 +1,27 @@
 <template>
   <div class="app-container risk-audit-page">
-    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" label-width="68px">
+    <el-card shadow="never" class="intro-card">
+      <div class="intro-header">
+        <div>
+          <div class="intro-title">上报记录审核</div>
+          <div class="intro-desc">管理员可查看待审核记录，调整综合评分和风险等级，并填写审核意见。</div>
+        </div>
+        <el-tag type="danger" effect="dark">仅管理员可见</el-tag>
+      </div>
+      <div class="status-shortcuts">
+        <el-button
+          v-for="item in statusTabs"
+          :key="item.key"
+          :type="activeStatusTab === item.key ? 'primary' : 'default'"
+          size="mini"
+          @click="switchStatusTab(item.key)"
+        >
+          {{ item.label }}
+        </el-button>
+      </div>
+    </el-card>
+
+    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" label-width="76px" class="search-form">
       <el-form-item label="风险标题" prop="title">
         <el-input
           v-model="queryParams.title"
@@ -8,20 +29,6 @@
           clearable
           @keyup.enter.native="handleQuery"
         />
-      </el-form-item>
-      <el-form-item label="审核状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option label="待审核" :value="0" />
-          <el-option label="已通过" :value="1" />
-          <el-option label="已驳回" :value="2" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="风险等级" prop="riskLevel">
-        <el-select v-model="queryParams.riskLevel" placeholder="请选择等级" clearable>
-          <el-option label="低危" :value="1" />
-          <el-option label="中危" :value="2" />
-          <el-option label="高危" :value="3" />
-        </el-select>
       </el-form-item>
       <el-form-item label="风险类型" prop="typeId">
         <el-select v-model="queryParams.typeId" placeholder="请选择类型" clearable filterable>
@@ -31,6 +38,20 @@
             :label="item.name"
             :value="item.id"
           />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="风险等级" prop="riskLevel">
+        <el-select v-model="queryParams.riskLevel" placeholder="请选择等级" clearable>
+          <el-option label="低危" :value="1" />
+          <el-option label="中危" :value="2" />
+          <el-option label="高危" :value="3" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="审核状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+          <el-option label="待审核" :value="0" />
+          <el-option label="已通过" :value="1" />
+          <el-option label="已驳回" :value="2" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -55,9 +76,10 @@
       <el-table-column label="综合评分" align="center" prop="finalScore" width="110" />
       <el-table-column label="风险等级" align="center" width="110">
         <template slot-scope="scope">
-          <el-tag :type="riskLevelTagType(scope.row.riskLevel)" size="small">
+          <el-tag v-if="scope.row.riskLevel" :type="riskLevelTagType(scope.row.riskLevel)" size="small">
             {{ riskLevelLabel(scope.row.riskLevel) }}
           </el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="审核状态" align="center" width="110">
@@ -67,12 +89,16 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="处理结果" prop="handleResult" min-width="180" show-overflow-tooltip />
+      <el-table-column label="审核意见" prop="handleResult" min-width="220" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ scope.row.handleResult || "-" }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="上报人" align="center" prop="userId" width="100" />
-      <el-table-column label="操作" align="center" width="180">
+      <el-table-column label="操作" align="center" width="220">
         <template slot-scope="scope">
           <el-button type="text" size="mini" @click="openAudit(scope.row)">
-            {{ scope.row.status === 0 ? "审核" : "重新审核" }}
+            {{ scope.row.status === 0 ? "立即审核" : "重新审核" }}
           </el-button>
           <el-button type="text" size="mini" @click="openHistory(scope.row)">审核历史</el-button>
         </template>
@@ -87,19 +113,32 @@
       @pagination="getList"
     />
 
-    <el-dialog title="风险审核" :visible.sync="auditOpen" width="720px" append-to-body>
-      <el-form ref="auditForm" :model="auditForm" :rules="auditRules" label-width="92px">
+    <el-dialog title="风险审核" :visible.sync="auditOpen" width="760px" append-to-body>
+      <el-form ref="auditFormRef" :model="auditForm" :rules="auditRules" label-width="92px">
         <el-descriptions :column="2" border class="mb16">
           <el-descriptions-item label="风险标题" :span="2">{{ auditCurrent.title || "-" }}</el-descriptions-item>
           <el-descriptions-item label="风险类型">{{ typeName(auditCurrent.typeId) }}</el-descriptions-item>
-          <el-descriptions-item label="关键词得分">{{ auditCurrent.keywordScore == null ? "-" : auditCurrent.keywordScore }}</el-descriptions-item>
+          <el-descriptions-item label="关键词得分">
+            {{ auditCurrent.keywordScore == null ? "-" : auditCurrent.keywordScore }}
+          </el-descriptions-item>
+          <el-descriptions-item label="原始等级">
+            <span v-if="auditCurrent.riskLevel">{{ riskLevelLabel(auditCurrent.riskLevel) }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="上报人">{{ auditCurrent.userId || "-" }}</el-descriptions-item>
           <el-descriptions-item label="风险内容" :span="2">
             <div class="detail-content">{{ auditCurrent.content || "-" }}</div>
           </el-descriptions-item>
         </el-descriptions>
 
         <el-form-item label="综合评分" prop="finalScore">
-          <el-input-number v-model="auditForm.finalScore" :min="0" :step="1" controls-position="right" style="width: 100%;" />
+          <el-input-number
+            v-model="auditForm.finalScore"
+            :min="0"
+            :step="1"
+            controls-position="right"
+            style="width: 100%;"
+          />
         </el-form-item>
         <el-form-item label="风险等级" prop="riskLevel">
           <el-radio-group v-model="auditForm.riskLevel">
@@ -127,15 +166,21 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" :loading="submitLoading" @click="submitAudit">提交审核</el-button>
-        <el-button @click="auditOpen = false">取 消</el-button>
+        <el-button @click="auditOpen = false">取消</el-button>
       </div>
     </el-dialog>
 
-    <el-dialog title="审核历史" :visible.sync="historyOpen" width="760px" append-to-body>
+    <el-dialog title="审核历史" :visible.sync="historyOpen" width="820px" append-to-body>
       <el-table v-loading="historyLoading" :data="historyList">
         <el-table-column label="记录ID" align="center" prop="id" width="90" />
-        <el-table-column label="审核结果" align="center" prop="auditResult" width="110" />
-        <el-table-column label="审核意见" prop="auditComment" min-width="260" show-overflow-tooltip />
+        <el-table-column label="审核结果" align="center" prop="auditResult" width="110">
+          <template slot-scope="scope">
+            <el-tag :type="scope.row.auditResult === '通过' ? 'success' : 'danger'" size="small">
+              {{ scope.row.auditResult || "-" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核意见" prop="auditComment" min-width="280" show-overflow-tooltip />
         <el-table-column label="审核人" align="center" prop="auditUserId" width="100" />
         <el-table-column label="审核时间" align="center" prop="auditTime" min-width="180" />
       </el-table>
@@ -161,11 +206,18 @@ export default {
       historyOpen: false,
       historyList: [],
       auditCurrent: {},
+      activeStatusTab: "pending",
+      statusTabs: [
+        { key: "pending", label: "待审核" },
+        { key: "approved", label: "已通过" },
+        { key: "rejected", label: "已驳回" },
+        { key: "all", label: "全部记录" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         title: undefined,
-        status: undefined,
+        status: 0,
         riskLevel: undefined,
         typeId: undefined
       },
@@ -185,6 +237,9 @@ export default {
         ],
         auditResult: [
           { required: true, message: "请选择审核结果", trigger: "change" }
+        ],
+        auditComment: [
+          { required: true, message: "请输入审核意见", trigger: "blur" }
         ]
       }
     }
@@ -199,6 +254,19 @@ export default {
         this.typeOptions = res.data || []
       })
     },
+    switchStatusTab(tabKey) {
+      this.activeStatusTab = tabKey
+      if (tabKey === "pending") {
+        this.queryParams.status = 0
+      } else if (tabKey === "approved") {
+        this.queryParams.status = 1
+      } else if (tabKey === "rejected") {
+        this.queryParams.status = 2
+      } else {
+        this.queryParams.status = undefined
+      }
+      this.handleQuery()
+    },
     getList() {
       this.loading = true
       listInfo(this.queryParams).then(res => {
@@ -210,11 +278,25 @@ export default {
     },
     handleQuery() {
       this.queryParams.pageNum = 1
+      this.syncStatusTabByQuery()
       this.getList()
     },
     resetQuery() {
       this.resetForm("queryForm")
+      this.activeStatusTab = "pending"
+      this.queryParams.status = 0
       this.handleQuery()
+    },
+    syncStatusTabByQuery() {
+      if (this.queryParams.status === 0) {
+        this.activeStatusTab = "pending"
+      } else if (this.queryParams.status === 1) {
+        this.activeStatusTab = "approved"
+      } else if (this.queryParams.status === 2) {
+        this.activeStatusTab = "rejected"
+      } else {
+        this.activeStatusTab = "all"
+      }
     },
     openAudit(row) {
       this.auditCurrent = { ...row }
@@ -226,10 +308,14 @@ export default {
         auditComment: row.handleResult || ""
       }
       this.auditOpen = true
-      this.$nextTick(() => this.resetForm("auditForm"))
+      this.$nextTick(() => {
+        if (this.$refs.auditFormRef) {
+          this.$refs.auditFormRef.clearValidate()
+        }
+      })
     },
     submitAudit() {
-      this.$refs.auditForm.validate(valid => {
+      this.$refs.auditFormRef.validate(valid => {
         if (!valid) {
           return
         }
@@ -281,6 +367,40 @@ export default {
 </script>
 
 <style scoped>
+.intro-card {
+  margin-bottom: 16px;
+}
+
+.intro-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.intro-title {
+  margin-bottom: 6px;
+  color: #162033;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.intro-desc {
+  color: #606266;
+  line-height: 1.7;
+}
+
+.status-shortcuts {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-form {
+  margin-top: 16px;
+}
+
 .table-toolbar {
   display: flex;
   justify-content: flex-end;

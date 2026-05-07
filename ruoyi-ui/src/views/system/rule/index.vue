@@ -1,6 +1,11 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+  <div class="app-container risk-rule-page">
+    <el-card shadow="never" class="intro-card">
+      <div class="intro-title">关键词设置</div>
+      <div class="intro-desc">为风险关键词配置所属类型和权重，系统会在用户上报后自动参与研判计算。</div>
+    </el-card>
+
+    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" label-width="76px" class="search-form">
       <el-form-item label="关键词" prop="keyword">
         <el-input
           v-model="queryParams.keyword"
@@ -9,8 +14,8 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="类型" prop="typeId">
-        <el-select v-model="queryParams.typeId" placeholder="风险类型" clearable filterable>
+      <el-form-item label="风险类型" prop="typeId">
+        <el-select v-model="queryParams.typeId" placeholder="请选择类型" clearable filterable>
           <el-option
             v-for="item in typeOptions"
             :key="item.id"
@@ -20,7 +25,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="状态" clearable>
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
           <el-option label="启用" :value="0" />
           <el-option label="停用" :value="1" />
         </el-select>
@@ -31,102 +36,67 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['system:rule:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:rule:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:rule:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['system:rule:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <el-alert
+      v-if="!typeOptions.length"
+      title="当前还没有可用风险类型，请先到“风险类型设置”中新增并启用类型。"
+      type="warning"
+      :closable="false"
+      class="mb16"
+    />
 
-    <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
-      <el-table-column label="关键词" align="center" prop="keyword" />
-      <el-table-column label="风险类型" align="center" prop="typeId">
+    <div class="toolbar-row">
+      <div>
+        <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['system:rule:add']">
+          新增规则
+        </el-button>
+      </div>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+    </div>
+
+    <el-table v-loading="loading" :data="ruleList">
+      <el-table-column label="编号" align="center" prop="id" width="90" />
+      <el-table-column label="关键词" align="center" prop="keyword" min-width="180" />
+      <el-table-column label="风险类型" align="center" min-width="160">
         <template slot-scope="scope">
-          <span>{{ typeName(scope.row.typeId) }}</span>
+          {{ typeName(scope.row.typeId) }}
         </template>
       </el-table-column>
-      <el-table-column label="权重" align="center" prop="weight" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="权重" align="center" prop="weight" width="100" />
+      <el-table-column label="状态" align="center" width="120">
         <template slot-scope="scope">
-          <span>{{ scope.row.status === 0 ? '启用' : scope.row.status === 1 ? '停用' : scope.row.status }}</span>
+          <el-tag :type="scope.row.status === 0 ? 'success' : 'info'" size="small">
+            {{ scope.row.status === 0 ? "启用" : "停用" }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="创建时间" align="center" prop="createTime" min-width="180" />
+      <el-table-column label="操作" align="center" width="180" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:rule:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['system:rule:remove']"
-          >删除</el-button>
+          <el-button size="mini" type="text" @click="handleUpdate(scope.row)" v-hasPermi="['system:rule:edit']">
+            编辑
+          </el-button>
+          <el-button size="mini" type="text" @click="handleDelete(scope.row)" v-hasPermi="['system:rule:remove']">
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <pagination
-      v-show="total>0"
+      v-show="total > 0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <el-dialog :title="title" :visible.sync="open" width="520px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="dialogTitle" :visible.sync="open" width="560px" append-to-body>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="关键词" prop="keyword">
-          <el-input v-model="form.keyword" placeholder="请输入关键词" />
+          <el-input v-model="form.keyword" placeholder="请输入关键词" maxlength="50" />
         </el-form-item>
         <el-form-item label="风险类型" prop="typeId">
-          <el-select v-model="form.typeId" placeholder="请选择类型" filterable clearable>
+          <el-select v-model="form.typeId" placeholder="请选择风险类型" filterable clearable style="width: 100%;">
             <el-option
               v-for="item in typeOptions"
               :key="item.id"
@@ -136,7 +106,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="权重" prop="weight">
-          <el-input-number v-model="form.weight" :min="0" :step="1" controls-position="right" style="width:100%" />
+          <el-input-number
+            v-model="form.weight"
+            :min="0"
+            :step="1"
+            controls-position="right"
+            style="width: 100%;"
+          />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -146,8 +122,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitForm">确定</el-button>
+        <el-button @click="cancel">取消</el-button>
       </div>
     </el-dialog>
   </div>
@@ -161,30 +137,36 @@ export default {
   name: "RiskRule",
   data() {
     return {
-      loading: true,
-      ids: [],
-      single: true,
-      multiple: true,
+      loading: false,
       showSearch: true,
       total: 0,
       ruleList: [],
       typeOptions: [],
-      title: "",
       open: false,
+      dialogTitle: "",
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        keyword: null,
-        typeId: null,
-        status: null
+        keyword: undefined,
+        typeId: undefined,
+        status: undefined
       },
-      form: {},
+      form: {
+        id: undefined,
+        keyword: "",
+        typeId: undefined,
+        weight: 0,
+        status: 0
+      },
       rules: {
         keyword: [
-          { required: true, message: "关键词不能为空", trigger: "blur" }
+          { required: true, message: "请输入关键词", trigger: "blur" }
+        ],
+        typeId: [
+          { required: true, message: "请选择风险类型", trigger: "change" }
         ],
         weight: [
-          { required: true, message: "权重不能为空", trigger: "blur" }
+          { required: true, message: "请输入权重", trigger: "blur" }
         ],
         status: [
           { required: true, message: "请选择状态", trigger: "change" }
@@ -198,36 +180,34 @@ export default {
   },
   methods: {
     loadTypeOptions() {
-      listType({ pageNum: 1, pageSize: 500 }).then(res => {
+      listType({ pageNum: 1, pageSize: 500, status: 0 }).then(res => {
         this.typeOptions = res.rows || []
       })
     },
     typeName(typeId) {
-      if (typeId == null) return ""
-      const t = this.typeOptions.find(x => x.id === typeId)
-      return t ? t.name : typeId
+      if (typeId == null) {
+        return "-"
+      }
+      const target = this.typeOptions.find(item => String(item.id) === String(typeId))
+      return target ? target.name : typeId
     },
     getList() {
       this.loading = true
       listRule(this.queryParams).then(response => {
-        this.ruleList = response.rows
-        this.total = response.total
+        this.ruleList = response.rows || []
+        this.total = response.total || 0
+      }).finally(() => {
         this.loading = false
       })
     },
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    reset() {
+    resetFormData() {
       this.form = {
-        id: null,
-        keyword: null,
-        typeId: null,
-        weight: null,
+        id: undefined,
+        keyword: "",
+        typeId: undefined,
+        weight: 0,
         status: 0
       }
-      this.resetForm("form")
     },
     handleQuery() {
       this.queryParams.pageNum = 1
@@ -237,58 +217,86 @@ export default {
       this.resetForm("queryForm")
       this.handleQuery()
     },
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-    },
     handleAdd() {
-      this.reset()
+      this.resetFormData()
       this.open = true
-      this.title = "添加风险研判规则"
-    },
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getRule(id).then(response => {
-        this.form = response.data
-        this.open = true
-        this.title = "修改风险研判规则"
-      })
-    },
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.id != null) {
-            updateRule(this.form).then(() => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addRule(this.form).then(() => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
+      this.dialogTitle = "新增关键词规则"
+      this.$nextTick(() => {
+        if (this.$refs.formRef) {
+          this.$refs.formRef.clearValidate()
         }
       })
     },
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除风险研判规则编号为"' + ids + '"的数据项？').then(function() {
-        return delRule(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
+    handleUpdate(row) {
+      getRule(row.id).then(response => {
+        this.form = response.data || {}
+        this.open = true
+        this.dialogTitle = "编辑关键词规则"
+        this.$nextTick(() => {
+          if (this.$refs.formRef) {
+            this.$refs.formRef.clearValidate()
+          }
+        })
+      })
     },
-    handleExport() {
-      this.download('system/rule/export', {
-        ...this.queryParams
-      }, `rule_${new Date().getTime()}.xlsx`)
+    cancel() {
+      this.open = false
+      this.resetFormData()
+    },
+    submitForm() {
+      this.$refs.formRef.validate(valid => {
+        if (!valid) {
+          return
+        }
+        const request = this.form.id ? updateRule(this.form) : addRule(this.form)
+        request.then(() => {
+          this.$modal.msgSuccess(this.form.id ? "修改成功" : "新增成功")
+          this.open = false
+          this.getList()
+        })
+      })
+    },
+    handleDelete(row) {
+      this.$modal.confirm(`确认删除关键词“${row.keyword}”吗？`).then(() => {
+        return delRule(row.id)
+      }).then(() => {
+        this.$modal.msgSuccess("删除成功")
+        this.getList()
+      }).catch(() => {})
     }
   }
 }
 </script>
+
+<style scoped>
+.intro-card {
+  margin-bottom: 16px;
+}
+
+.intro-title {
+  margin-bottom: 6px;
+  color: #162033;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.intro-desc {
+  color: #606266;
+  line-height: 1.7;
+}
+
+.search-form {
+  margin-top: 16px;
+}
+
+.toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mb16 {
+  margin-bottom: 16px;
+}
+</style>

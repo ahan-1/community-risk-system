@@ -4,7 +4,9 @@
       <div class="intro-header">
         <div>
           <div class="intro-title">上报记录审核</div>
-          <div class="intro-desc">管理员可查看待审核记录，调整综合评分和风险等级，并填写审核意见。</div>
+          <div class="intro-desc">
+            管理员可查看待审核记录，参考系统自动研判结果，并对最终风险分数、风险等级和审核意见进行人工复核。
+          </div>
         </div>
         <el-tag type="danger" effect="dark">仅管理员可见</el-tag>
       </div>
@@ -72,9 +74,9 @@
           {{ typeName(scope.row.typeId) }}
         </template>
       </el-table-column>
-      <el-table-column label="关键词得分" align="center" prop="keywordScore" width="110" />
-      <el-table-column label="综合评分" align="center" prop="finalScore" width="110" />
-      <el-table-column label="风险等级" align="center" width="110">
+      <el-table-column label="自动研判分数" align="center" prop="keywordScore" width="120" />
+      <el-table-column label="最终风险分数" align="center" prop="finalScore" width="120" />
+      <el-table-column label="最终风险等级" align="center" width="120">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.riskLevel" :type="riskLevelTagType(scope.row.riskLevel)" size="small">
             {{ riskLevelLabel(scope.row.riskLevel) }}
@@ -98,7 +100,7 @@
       <el-table-column label="操作" align="center" width="220">
         <template slot-scope="scope">
           <el-button type="text" size="mini" @click="openAudit(scope.row)">
-            {{ scope.row.status === 0 ? "立即审核" : "重新审核" }}
+            {{ scope.row.status === 0 ? "立即审核" : "重新复核" }}
           </el-button>
           <el-button type="text" size="mini" @click="openHistory(scope.row)">审核历史</el-button>
         </template>
@@ -114,14 +116,27 @@
     />
 
     <el-dialog title="风险审核" :visible.sync="auditOpen" width="760px" append-to-body>
-      <el-form ref="auditFormRef" :model="auditForm" :rules="auditRules" label-width="92px">
+      <el-alert
+        title="请先查看系统自动研判结果，再结合实际情况填写最终风险分数、最终风险等级和审核意见。"
+        type="info"
+        :closable="false"
+        class="mb16"
+      />
+      <el-form ref="auditFormRef" :model="auditForm" :rules="auditRules" label-width="110px">
         <el-descriptions :column="2" border class="mb16">
           <el-descriptions-item label="风险标题" :span="2">{{ auditCurrent.title || "-" }}</el-descriptions-item>
           <el-descriptions-item label="风险类型">{{ typeName(auditCurrent.typeId) }}</el-descriptions-item>
-          <el-descriptions-item label="关键词得分">
+          <el-descriptions-item label="自动研判分数">
             {{ auditCurrent.keywordScore == null ? "-" : auditCurrent.keywordScore }}
           </el-descriptions-item>
-          <el-descriptions-item label="原始等级">
+          <el-descriptions-item label="自动研判等级">
+            <span v-if="auditCurrent.riskLevel">{{ riskLevelLabel(auditCurrent.riskLevel) }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="当前最终分数">
+            {{ auditCurrent.finalScore == null ? "-" : auditCurrent.finalScore }}
+          </el-descriptions-item>
+          <el-descriptions-item label="当前最终等级">
             <span v-if="auditCurrent.riskLevel">{{ riskLevelLabel(auditCurrent.riskLevel) }}</span>
             <span v-else>-</span>
           </el-descriptions-item>
@@ -131,7 +146,7 @@
           </el-descriptions-item>
         </el-descriptions>
 
-        <el-form-item label="综合评分" prop="finalScore">
+        <el-form-item label="最终风险分数" prop="finalScore">
           <el-input-number
             v-model="auditForm.finalScore"
             :min="0"
@@ -140,7 +155,7 @@
             style="width: 100%;"
           />
         </el-form-item>
-        <el-form-item label="风险等级" prop="riskLevel">
+        <el-form-item label="最终风险等级" prop="riskLevel">
           <el-radio-group v-model="auditForm.riskLevel">
             <el-radio :label="1">低危</el-radio>
             <el-radio :label="2">中危</el-radio>
@@ -230,10 +245,10 @@ export default {
       },
       auditRules: {
         finalScore: [
-          { required: true, message: "请输入综合评分", trigger: "blur" }
+          { required: true, message: "请输入最终风险分数", trigger: "blur" }
         ],
         riskLevel: [
-          { required: true, message: "请选择风险等级", trigger: "change" }
+          { required: true, message: "请选择最终风险等级", trigger: "change" }
         ],
         auditResult: [
           { required: true, message: "请选择审核结果", trigger: "change" }

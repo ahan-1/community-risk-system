@@ -88,7 +88,6 @@ public class RiskInfoServiceImpl implements IRiskInfoService
         }
         String title = riskInfo.getTitle();
         String content = riskInfo.getContent() != null ? riskInfo.getContent() : "";
-        String text = title + content;
 
         List<RiskRule> rules = riskRuleMapper.selectRiskRuleListActive();
         long keywordTotal = 0L;
@@ -106,15 +105,19 @@ public class RiskInfoServiceImpl implements IRiskInfoService
                 {
                     continue;
                 }
-                if (!text.contains(kw))
+                int titleCount = countKeywordOccurrences(title, kw);
+                int contentCount = countKeywordOccurrences(content, kw);
+                int totalCount = titleCount + contentCount;
+                if (totalCount <= 0)
                 {
                     continue;
                 }
                 long weight = rule.getWeight() != null ? rule.getWeight() : 0L;
-                keywordTotal += weight;
+                long ruleScore = calculateRuleScore(weight, titleCount, totalCount);
+                keywordTotal += ruleScore;
                 if (rule.getTypeId() != null)
                 {
-                    typeScoreMap.merge(rule.getTypeId(), weight, Long::sum);
+                    typeScoreMap.merge(rule.getTypeId(), ruleScore, Long::sum);
                 }
             }
         }
@@ -152,6 +155,34 @@ public class RiskInfoServiceImpl implements IRiskInfoService
     /**
      * 在类型得分中取最高者；同分取较小 type_id
      */
+    private long calculateRuleScore(long weight, int titleCount, int totalCount)
+    {
+        long countScore = weight * Math.min(totalCount, 3);
+        long titleBonus = titleCount > 0 ? (weight + 1) / 2 : 0L;
+        return countScore + titleBonus;
+    }
+
+    private int countKeywordOccurrences(String text, String keyword)
+    {
+        if (StringUtils.isEmpty(text) || StringUtils.isEmpty(keyword))
+        {
+            return 0;
+        }
+        int count = 0;
+        int startIndex = 0;
+        while (startIndex <= text.length() - keyword.length())
+        {
+            int foundIndex = text.indexOf(keyword, startIndex);
+            if (foundIndex < 0)
+            {
+                break;
+            }
+            count++;
+            startIndex = foundIndex + keyword.length();
+        }
+        return count;
+    }
+
     private Long pickBestTypeId(Map<Long, Long> typeScoreMap)
     {
         if (typeScoreMap == null || typeScoreMap.isEmpty())
